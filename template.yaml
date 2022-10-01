@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  FastAPI-api
+  Sample SAM Template for FastAPI-api
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    # VpcConfig:
+    #   SecurityGroupIds:
+    #     - sg-123
+    #     - sg-456
+Resources:
+  FastAPIApiFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      # VpcConfig:
+      #   SecurityGroupIds:
+      #     - sg-first
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: TableName # If you want to make a CRUD on a DynamoDB's table
+        - S3CrudPolicy:
+            BucketName: !Ref  
+        - Statement:
+          - Effect: Allow
+            Resource: '*'
+            Action:
+              - s3:*
+      CodeUri: src/
+      Handler: app.handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          STAGE: "dev"
+          ALLOWED_HOSTS: "" #separated by commas
+          VERSION: 
+
+      Architectures:
+        - x86_64
+      Events:
+        Root:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+        NonRoot:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  FastAPIBucket:
+    Type: AWS::S3::Bucket
+  
+  # If you want to integrate a Secret Manager
+  # FastAPISecrets:
+  #     Type: AWS::SecretsManager::Secret
+  #     Properties:
+  #       Name: FastAPISecrets
+  #       Description: "This secrets for FastAPI function."
+  #       SecretString: ''
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  FastAPIBucket:
+    Description: "The main Bucket to save files"
+    Value: !GetAtt FastAPIBucket.Arn
+  FastAPIApiApi:
+    Description: "API Gateway endpoint URL for Prod stage for FastAPI Api function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  FastAPIApiFunction:
+    Description: "FastAPI Api Lambda Function ARN"
+    Value: !GetAtt FastAPIApiFunction.Arn
+  FastAPIApiFunctionIamRole:
+    Description: "Implicit IAM Role created for FastAPI Api function"
+    Value: !GetAtt FastAPIApiFunctionRole.Arn
